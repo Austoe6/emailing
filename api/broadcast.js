@@ -28,6 +28,8 @@ async function getAllContacts() {
       const audiencesResponse = await client.audiences.list();
       audiences = audiencesResponse.data?.data || [];
       console.log(`Found ${audiences.length} audience(s)`);
+      // Delay after API call to respect rate limit
+      await new Promise(resolve => setTimeout(resolve, 600));
     } catch (err) {
       console.error('Error fetching audiences:', err.message);
     }
@@ -40,6 +42,8 @@ async function getAllContacts() {
           const contactsResponse = await client.contacts.list({
             audienceId: audience.id,
           });
+          // Delay after each API call to respect rate limit
+          await new Promise(resolve => setTimeout(resolve, 600));
           
           console.log(`Audience ${audience.id} (${audience.name}):`, contactsResponse.data);
           
@@ -69,6 +73,8 @@ async function getAllContacts() {
         // Try listing contacts without audienceId (if supported)
         const contactsResponse = await client.contacts.list();
         console.log('Direct contacts response:', contactsResponse.data);
+        // Delay after API call to respect rate limit
+        await new Promise(resolve => setTimeout(resolve, 600));
         
         if (contactsResponse.data?.data && Array.isArray(contactsResponse.data.data)) {
           allContacts.push(...contactsResponse.data.data);
@@ -131,6 +137,9 @@ async function broadcastEmail(subject, body, fromEmail, fromName = null) {
     // Batch API response format can be inconsistent, causing duplicates
     // Send emails individually to ensure accurate tracking
     console.log(`Sending ${batchEmails.length} emails individually...`);
+    
+    // Add delay before sending first email to ensure rate limit is reset after contact fetching
+    await new Promise(resolve => setTimeout(resolve, 600));
     
     for (let i = 0; i < batchEmails.length; i++) {
       const email = batchEmails[i];
