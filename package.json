@@ -1,0 +1,33 @@
+{
+  "name": "resend-broadcast-api",
+  "version": "1.0.0",
+  "description": "API to broadcast emails to all Resend contacts using Resend API",
+  "main": "api/broadcast.js",
+  "scripts": {
+    "start": "node test-server.js",
+    "dev": "node test-server.js",
+    "vercel:dev": "vercel dev",
+    "deploy": "vercel"
+  },
+  "keywords": [
+    "resend",
+    "email",
+    "broadcast",
+    "api",
+    "vercel"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "resend": "^3.2.0",
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "vercel": "^34.0.0"
+  }
+}
+
