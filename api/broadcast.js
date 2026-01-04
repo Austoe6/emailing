@@ -198,9 +198,10 @@ async function broadcastEmail(subject, body, fromEmail, fromName = null) {
           }
         }
         
-        // Small delay to avoid rate limits (100ms between sends)
+        // Delay to respect Resend rate limit (2 requests per second = 500ms minimum between requests)
+        // Using 600ms to be safe and account for processing time
         if (i < batchEmails.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 600));
         }
       } catch (err) {
         failureCount++;
