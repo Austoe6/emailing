@@ -136,23 +136,66 @@ async function broadcastEmail(subject, body, fromEmail, fromName = null) {
       const email = batchEmails[i];
       try {
         const emailResponse = await client.emails.send(email);
+        
+        // Log full response for debugging
+        console.log(`Response for ${email.to}:`, JSON.stringify(emailResponse, null, 2));
+        
+        // Check multiple possible response structures
+        let emailId = null;
+        let responseError = null;
+        
+        // Try different response formats
         if (emailResponse.data?.id) {
-          successCount++;
-          results.push({
-            email: email.to,
-            status: 'success',
-            id: emailResponse.data.id,
-          });
-          console.log(`✓ Sent to ${email.to} (ID: ${emailResponse.data.id})`);
-        } else {
-          // Check if email was actually sent (some responses might not include ID)
+          emailId = emailResponse.data.id;
+        } else if (emailResponse.id) {
+          emailId = emailResponse.id;
+        } else if (emailResponse.data && typeof emailResponse.data === 'string') {
+          // Sometimes the ID is returned as a string directly
+          emailId = emailResponse.data;
+        } else if (emailResponse.error) {
+          responseError = emailResponse.error;
+        }
+        
+        // Check for errors in response
+        if (emailResponse.error || responseError) {
           failureCount++;
           results.push({
             email: email.to,
             status: 'failed',
-            error: 'No email ID returned in response',
+            error: emailResponse.error?.message || responseError || 'Unknown error from API',
           });
-          console.warn(`✗ Failed to send to ${email.to}: No email ID returned`);
+          console.error(`✗ Failed to send to ${email.to}:`, emailResponse.error || responseError);
+        } else if (emailId) {
+          successCount++;
+          results.push({
+            email: email.to,
+            status: 'success',
+            id: emailId,
+          });
+          console.log(`✓ Sent to ${email.to} (ID: ${emailId})`);
+        } else {
+          // If no error but also no ID, check if response indicates success
+          // Some API versions might return success without ID
+          if (emailResponse.data && !emailResponse.error) {
+            // Assume success if we got data back without errors
+            successCount++;
+            results.push({
+              email: email.to,
+              status: 'success',
+              id: 'sent',
+              note: 'Email sent but ID not in expected format',
+            });
+            console.log(`✓ Sent to ${email.to} (response received, ID format unexpected)`);
+          } else {
+            failureCount++;
+            results.push({
+              email: email.to,
+              status: 'failed',
+              error: 'No email ID returned in response',
+              response: emailResponse,
+            });
+            console.warn(`✗ Failed to send to ${email.to}: No email ID returned`, emailResponse);
+          }
         }
         
         // Small delay to avoid rate limits (100ms between sends)
@@ -165,8 +208,9 @@ async function broadcastEmail(subject, body, fromEmail, fromName = null) {
           email: email.to,
           status: 'failed',
           error: err.message || 'Unknown error',
+          details: err.response?.data || err.stack,
         });
-        console.error(`✗ Error sending to ${email.to}:`, err.message);
+        console.error(`✗ Error sending to ${email.to}:`, err.message, err.response?.data);
       }
     }
 
